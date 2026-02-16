@@ -23,6 +23,47 @@ export type FeedItem = {
   senderUsername: string
 }
 
+const SIGNED_URL_TTL_SECONDS = 24 * 60 * 60
+const SIGNED_URL_REFRESH_MARGIN_MS = 60 * 1000
+const MAX_SIGNED_URL_CACHE_SIZE = 300
+
+const signedUrlCache = new Map<
+  string,
+  {
+    expiresAtMs: number
+    signedUrl: string
+  }
+>()
+
+const trimSignedUrlCache = () => {
+  while (signedUrlCache.size > MAX_SIGNED_URL_CACHE_SIZE) {
+    const oldestKey = signedUrlCache.keys().next().value as string | undefined
+    if (!oldestKey) break
+    signedUrlCache.delete(oldestKey)
+  }
+}
+
+const getSignedPhotoUrl = async (storagePath: string) => {
+  const now = Date.now()
+  const cached = signedUrlCache.get(storagePath)
+  if (cached && cached.expiresAtMs - SIGNED_URL_REFRESH_MARGIN_MS > now) {
+    return cached.signedUrl
+  }
+
+  const { data: signed, error: signedError } = await supabase.storage
+    .from('photos')
+    .createSignedUrl(storagePath, SIGNED_URL_TTL_SECONDS)
+
+  if (signedError || !signed?.signedUrl) return null
+
+  signedUrlCache.set(storagePath, {
+    expiresAtMs: now + SIGNED_URL_TTL_SECONDS * 1000,
+    signedUrl: signed.signedUrl
+  })
+  trimSignedUrlCache()
+  return signed.signedUrl
+}
+
 export const getFeedItems = async () => {
   const { data: authData, error: authError } = await supabase.auth.getUser()
   if (authError) throw authError
@@ -87,15 +128,12 @@ export const getFeedItems = async () => {
 
   const signedResults = await Promise.all(
     entries.map(async (value) => {
-      const { data: signed, error: signedError } = await supabase.storage
-        .from('photos')
-        .createSignedUrl(value.photo.storage_path, 24 * 60 * 60)
-
-      if (signedError || !signed?.signedUrl) return null
+      const signedUrl = await getSignedPhotoUrl(value.photo.storage_path)
+      if (!signedUrl) return null
 
       return {
         photoId: value.photo.id,
-        imageUrl: signed.signedUrl,
+        imageUrl: signedUrl,
         createdAt: value.photo.created_at,
         circleIds: Array.from(value.circleIds),
         senderId: value.photo.sender_id,
