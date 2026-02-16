@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { getOrCreateInviteForCircle } from './inviteService'
 import { ensureUserProfile } from './userService'
 
 export const createCircle = async (name: string, userId: string) => {
@@ -21,6 +22,13 @@ export const createCircle = async (name: string, userId: string) => {
     user_id: userId
   })
   if (memberError) throw memberError
+
+  // Create an invite code right when the circle is created.
+  try {
+    await getOrCreateInviteForCircle(data.id)
+  } catch {
+    // Ignore invite bootstrap failures so circle creation still succeeds.
+  }
 
   return data
 }

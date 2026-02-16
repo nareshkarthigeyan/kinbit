@@ -1,13 +1,12 @@
 import { supabase } from '../lib/supabase'
 
 export const ensureUserProfile = async (userId: string, username?: string | null) => {
-  const { error } = await supabase.from('users').upsert(
-    {
-      id: userId,
-      username: username ?? null
-    },
-    { onConflict: 'id' }
-  )
+  const payload: { id: string; username?: string | null } = { id: userId }
+  if (username !== undefined) {
+    payload.username = username
+  }
+
+  const { error } = await supabase.from('users').upsert(payload, { onConflict: 'id' })
 
   if (error) throw error
 }
@@ -17,6 +16,7 @@ export const ensureCurrentUserProfile = async () => {
   if (error) throw error
   if (!data.user) return null
 
-  await ensureUserProfile(data.user.id, data.user.email)
+  const username = (data.user.user_metadata?.username as string | undefined) ?? undefined
+  await ensureUserProfile(data.user.id, username)
   return data.user
 }

@@ -14,6 +14,7 @@ import { supabase } from '../lib/supabase'
 import { ensureUserProfile } from '../services/userService'
 
 export default function AuthScreen({ onAuth }: { onAuth: () => void }) {
+  const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [mode, setMode] = useState<'signup' | 'signin'>('signin')
@@ -23,7 +24,12 @@ export default function AuthScreen({ onAuth }: { onAuth: () => void }) {
     setLoading(true)
     const { data, error } = await supabase.auth.signUp({
       email,
-      password
+      password,
+      options: {
+        data: {
+          username: username.trim()
+        }
+      }
     })
 
     if (error) {
@@ -33,7 +39,7 @@ export default function AuthScreen({ onAuth }: { onAuth: () => void }) {
     }
 
     if (data.user) {
-      await ensureUserProfile(data.user.id, email)
+      await ensureUserProfile(data.user.id, username.trim())
     }
 
     setLoading(false)
@@ -54,7 +60,8 @@ export default function AuthScreen({ onAuth }: { onAuth: () => void }) {
     }
 
     if (data.user) {
-      await ensureUserProfile(data.user.id, data.user.email)
+      const profileUsername = (data.user.user_metadata?.username as string | undefined) ?? undefined
+      await ensureUserProfile(data.user.id, profileUsername)
     }
 
     setLoading(false)
@@ -64,6 +71,10 @@ export default function AuthScreen({ onAuth }: { onAuth: () => void }) {
   const submit = () => {
     if (!email || !password) {
       Alert.alert('Enter email and password')
+      return
+    }
+    if (mode === 'signup' && !username.trim()) {
+      Alert.alert('Enter a username')
       return
     }
 
@@ -101,6 +112,16 @@ export default function AuthScreen({ onAuth }: { onAuth: () => void }) {
               </Pressable>
             </View>
 
+            {mode === 'signup' ? (
+              <TextInput
+                autoCapitalize="none"
+                onChangeText={setUsername}
+                placeholder="Username"
+                placeholderTextColor="#8B93AB"
+                style={styles.input}
+                value={username}
+              />
+            ) : null}
             <TextInput
               autoCapitalize="none"
               keyboardType="email-address"
