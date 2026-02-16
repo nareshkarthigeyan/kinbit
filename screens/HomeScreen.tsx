@@ -11,6 +11,7 @@ import {
   ScrollView,
   Share,
   Text,
+  TextInput,
   useWindowDimensions,
   View
 } from 'react-native'
@@ -28,7 +29,12 @@ import { useFeedTransitions } from './home/useFeedTransitions'
 
 export default function HomeScreen() {
   const { width, height } = useWindowDimensions()
-  const frameSize = Math.min(width - 28, height * 0.52)
+  const frameSize = Math.min(width, height * 0.56)
+  const frameTop = Math.max(0, (height - frameSize) / 2)
+  const topChromeTop = Math.max(8, frameTop - 70)
+  const feedMetaTop = Math.max(8, frameTop - 54)
+  const bottomChromeTop = frameTop + frameSize + 10
+  const feedCirclesTop = frameTop + frameSize + 8
 
   const cameraRef = useRef<CameraView | null>(null)
   const [permission, requestPermission] = useCameraPermissions()
@@ -48,6 +54,8 @@ export default function HomeScreen() {
   const [joinCode, setJoinCode] = useState('')
 
   const [capturedUri, setCapturedUri] = useState<string | null>(null)
+  const [capturedMirrored, setCapturedMirrored] = useState(false)
+  const [caption, setCaption] = useState('')
   const [cameraReady, setCameraReady] = useState(false)
   const [feed, setFeed] = useState<FeedItem[]>([])
   const [feedLoading, setFeedLoading] = useState(false)
@@ -192,7 +200,11 @@ export default function HomeScreen() {
     await runWithCooldown(async () => {
       if (!cameraRef.current) return Alert.alert('Camera not ready')
       const photo = await cameraRef.current.takePictureAsync({ quality: 0.55 })
-      if (photo?.uri) setCapturedUri(photo.uri)
+      if (photo?.uri) {
+        setCaption('')
+        setCapturedMirrored(facing === 'front')
+        setCapturedUri(photo.uri)
+      }
     })
   }
 
@@ -207,7 +219,11 @@ export default function HomeScreen() {
       })
       if (result.canceled) return
       const uri = result.assets[0]?.uri
-      if (uri) setCapturedUri(uri)
+      if (uri) {
+        setCaption('')
+        setCapturedMirrored(false)
+        setCapturedUri(uri)
+      }
     })
   }
 
@@ -221,11 +237,14 @@ export default function HomeScreen() {
 
       const success = await uploadPhotoFromUri(capturedUri, {
         postToAll,
-        circleIds: selectedCircleIds
+        circleIds: selectedCircleIds,
+        caption
       })
 
       if (success) {
         setCapturedUri(null)
+        setCapturedMirrored(false)
+        setCaption('')
         await loadFeed({ prefetch: true })
       }
     }, 1200)
@@ -342,7 +361,14 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.root}>
       <View style={styles.screen} {...panHandlers}>
         <Animated.View
-          style={[styles.headerWrap, { opacity: chromeOpacity, transform: [{ translateY: chromeShift }] }]}
+          style={[
+            styles.headerWrap,
+            {
+              top: topChromeTop,
+              opacity: chromeOpacity,
+              transform: [{ translateY: chromeShift }]
+            }
+          ]}
         >
           <View style={styles.headerRow}>
             <View style={styles.pill}>
@@ -385,7 +411,10 @@ export default function HomeScreen() {
           </View>
         </Animated.View>
 
-        <Animated.View pointerEvents={feedMode ? 'auto' : 'none'} style={[styles.feedTopMeta, { opacity: feedInfoOpacity }]}>
+        <Animated.View
+          pointerEvents={feedMode ? 'auto' : 'none'}
+          style={[styles.feedTopMeta, { top: feedMetaTop, opacity: feedInfoOpacity }]}
+        >
           <View style={styles.postedPill}>
             <Ionicons name="person-circle-outline" size={16} color="#EAF2FF" />
             <Text style={styles.postedPillText}>
@@ -395,7 +424,7 @@ export default function HomeScreen() {
           <Text style={styles.feedCircleTitle}>{feedCircleTitle}</Text>
         </Animated.View>
 
-        <View style={styles.centerWrap}>
+        <View style={[styles.centerWrap, { top: frameTop }]}>
           <Animated.View style={{ transform: [{ scale: frameScale }] }}>
             <View style={[styles.frame, { width: frameSize, height: frameSize }]}>
               {feedMode ? (
@@ -420,7 +449,12 @@ export default function HomeScreen() {
                   ) : null}
                 </>
               ) : isSendState ? (
-                <Image source={{ uri: capturedUri! }} style={styles.media} resizeMode="cover" fadeDuration={0} />
+                <Image
+                  source={{ uri: capturedUri! }}
+                  style={[styles.media, capturedMirrored ? styles.mediaMirrored : null]}
+                  resizeMode="cover"
+                  fadeDuration={0}
+                />
               ) : permission?.granted ? (
                 <>
                   <CameraView
@@ -442,11 +476,22 @@ export default function HomeScreen() {
 
         <Animated.View
           pointerEvents={feedMode ? 'none' : 'auto'}
-          style={[styles.bottomWrap, { opacity: chromeOpacity, transform: [{ translateY: chromeShift }] }]}
+          style={[
+            styles.bottomWrap,
+            { top: bottomChromeTop, opacity: chromeOpacity, transform: [{ translateY: chromeShift }] }
+          ]}
         >
           {isSendState ? (
             <View style={styles.sendPanel}>
               <Text style={styles.sendLabel}>Send to</Text>
+              <TextInput
+                style={styles.captionInput}
+                placeholder="Add a caption"
+                placeholderTextColor="#95A4BD"
+                value={caption}
+                onChangeText={setCaption}
+                maxLength={140}
+              />
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.circleRow}>
                 <Pressable
                   style={[styles.circleIcon, styles.addCircle, actionBusy && styles.disabled]}
@@ -516,7 +561,11 @@ export default function HomeScreen() {
               style={[styles.sideAction, actionBusy && styles.disabled]}
               onPress={() => {
                 if (actionBusy) return
-                if (isSendState) setCapturedUri(null)
+                if (isSendState) {
+                  setCapturedUri(null)
+                  setCapturedMirrored(false)
+                  setCaption('')
+                }
                 else setFacing((prev) => (prev === 'front' ? 'back' : 'front'))
               }}
               disabled={actionBusy}
@@ -528,8 +577,13 @@ export default function HomeScreen() {
 
         <Animated.View
           pointerEvents={feedMode ? 'auto' : 'none'}
-          style={[styles.feedCirclesPanel, { opacity: feedInfoOpacity }]}
+          style={[styles.feedCirclesPanel, { top: feedCirclesTop, opacity: feedInfoOpacity }]}
         >
+          {displayedFeedItem?.caption?.trim() ? (
+            <Text numberOfLines={2} style={styles.feedCaption}>
+              {displayedFeedItem.caption}
+            </Text>
+          ) : null}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.feedCircleRow}>
             {feedCircleItems.map((circle) => {
               const selected = selectedFeedCircleId === circle.id

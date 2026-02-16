@@ -12,6 +12,7 @@ Run these files in order in the Supabase SQL Editor:
 8. `db/08_username_email_login.sql`
 9. `db/09_profile_sync_and_username_backfill.sql`
 10. `db/10_users_read_profiles_policy.sql`
+11. `db/11_photos_caption.sql`
 
 Then create storage bucket manually:
 

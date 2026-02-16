@@ -8,17 +8,20 @@ export const styles = StyleSheet.create({
   screen: {
     alignItems: 'center',
     flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10
+    paddingVertical: 10,
+    position: 'relative'
   },
   headerWrap: {
-    marginBottom: 12,
+    left: 0,
+    position: 'absolute',
+    right: 0,
     width: '100%'
   },
   feedTopMeta: {
     alignItems: 'center',
-    marginBottom: 8,
+    left: 0,
+    position: 'absolute',
+    right: 0,
     width: '100%'
   },
   headerRow: {
@@ -54,18 +57,23 @@ export const styles = StyleSheet.create({
   },
   centerWrap: {
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0
   },
   frame: {
     backgroundColor: '#000000',
-    borderColor: '#5D6F8D',
+    borderColor: 'rgba(226,240,255,0.26)',
     borderRadius: 36,
-    borderStyle: 'dotted',
-    borderWidth: 2,
+    borderWidth: 1.25,
     overflow: 'hidden'
   },
   media: {
     flex: 1
+  },
+  mediaMirrored: {
+    transform: [{ scaleX: -1 }]
   },
   mediaAbsolute: {
     height: '100%',
@@ -124,7 +132,9 @@ export const styles = StyleSheet.create({
     fontSize: 14
   },
   bottomWrap: {
-    marginTop: 12,
+    left: 0,
+    position: 'absolute',
+    right: 0,
     width: '100%'
   },
   captureHintRow: {
@@ -152,6 +162,17 @@ export const styles = StyleSheet.create({
     fontWeight: '800',
     marginBottom: 8,
     paddingHorizontal: 2
+  },
+  captionInput: {
+    backgroundColor: '#101A2A',
+    borderColor: '#263A57',
+    borderRadius: 12,
+    borderWidth: 1,
+    color: '#EAF2FF',
+    fontSize: 14,
+    marginBottom: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10
   },
   circleRow: {
     alignItems: 'center',
@@ -246,8 +267,18 @@ export const styles = StyleSheet.create({
   },
   feedCirclesPanel: {
     alignItems: 'center',
-    marginTop: 10,
+    left: 0,
+    position: 'absolute',
+    right: 0,
     width: '100%'
+  },
+  feedCaption: {
+    color: '#EAF2FF',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+    maxWidth: '92%',
+    textAlign: 'center'
   },
   feedCircleRow: {
     alignItems: 'flex-end',

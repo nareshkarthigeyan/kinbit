@@ -4,6 +4,7 @@ type PhotoRow = {
   id: string
   sender_id: string
   storage_path: string
+  caption: string | null
   created_at: string
   expires_at: string
 }
@@ -17,6 +18,7 @@ type MapRow = {
 export type FeedItem = {
   photoId: string
   imageUrl: string
+  caption: string | null
   createdAt: string
   circleIds: string[]
   senderId: string
@@ -95,6 +97,7 @@ export const getFeedItems = async () => {
         id,
         sender_id,
         storage_path,
+        caption,
         created_at,
         expires_at
       )
@@ -141,6 +144,7 @@ export const getFeedItems = async () => {
       return {
         photoId: value.photo.id,
         imageUrl: signedUrl,
+        caption: value.photo.caption ?? null,
         createdAt: value.photo.created_at,
         circleIds: Array.from(value.circleIds),
         senderId: value.photo.sender_id,

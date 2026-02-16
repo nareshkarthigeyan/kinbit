@@ -6,6 +6,7 @@ import { ensureUserProfile, getSafeUsername } from './userService'
 type UploadOptions = {
   postToAll?: boolean
   circleIds?: string[]
+  caption?: string
 }
 
 export const uploadPhotoFromUri = async (uri: string, options: UploadOptions = {}) => {
@@ -25,6 +26,7 @@ export const uploadPhotoFromUri = async (uri: string, options: UploadOptions = {
   const arrayBuffer = await response.arrayBuffer()
 
   const fileName = `${Date.now()}.jpg`
+  const normalizedCaption = options.caption?.trim() || null
 
   const { error: uploadError } = await supabase.storage.from('photos').upload(fileName, arrayBuffer, {
     contentType: 'image/jpeg'
@@ -41,6 +43,7 @@ export const uploadPhotoFromUri = async (uri: string, options: UploadOptions = {
     .insert({
       sender_id: user.id,
       storage_path: fileName,
+      caption: normalizedCaption,
       expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000)
     })
     .select()

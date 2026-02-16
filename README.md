@@ -64,7 +64,8 @@ kinbit/
     ├── 07_fix_photo_map_policy_recursion.sql
     ├── 08_username_email_login.sql
     ├── 09_profile_sync_and_username_backfill.sql
-    └── 10_users_read_profiles_policy.sql
+    ├── 10_users_read_profiles_policy.sql
+    └── 11_photos_caption.sql
 ```
 
 ## Prerequisites
@@ -109,6 +110,7 @@ In Supabase SQL Editor, run files in this exact order:
 8. `db/08_username_email_login.sql`
 9. `db/09_profile_sync_and_username_backfill.sql`
 10. `db/10_users_read_profiles_policy.sql`
+11. `db/11_photos_caption.sql`
 
 ### 4) Create storage bucket
 
