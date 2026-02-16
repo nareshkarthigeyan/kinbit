@@ -10,20 +10,21 @@ import {
   View
 } from 'react-native'
 import { supabase } from '../lib/supabase'
-import { ensureUserProfile } from '../services/userService'
+import { ensureUserProfile, getSafeUsername } from '../services/userService'
 import { styles } from './auth/styles'
 
 export default function AuthScreen({ onAuth }: { onAuth: () => void }) {
   const [username, setUsername] = useState('')
-  const [email, setEmail] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [mode, setMode] = useState<'signup' | 'signin'>('signin')
   const [loading, setLoading] = useState(false)
 
   const signUp = async () => {
     setLoading(true)
+    const normalizedEmail = identifier.trim().toLowerCase()
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: normalizedEmail,
       password,
       options: {
         data: {
@@ -39,7 +40,11 @@ export default function AuthScreen({ onAuth }: { onAuth: () => void }) {
     }
 
     if (data.user) {
-      await ensureUserProfile(data.user.id, username.trim())
+      await ensureUserProfile(
+        data.user.id,
+        getSafeUsername(username.trim()),
+        normalizedEmail
+      )
     }
 
     setLoading(false)
@@ -48,8 +53,32 @@ export default function AuthScreen({ onAuth }: { onAuth: () => void }) {
 
   const signIn = async () => {
     setLoading(true)
+    const rawIdentifier = identifier.trim()
+    const normalizedIdentifier = rawIdentifier.toLowerCase()
+    let loginEmail = normalizedIdentifier
+
+    if (!rawIdentifier.includes('@')) {
+      const { data: resolvedEmail, error: resolveError } = await supabase.rpc('resolve_login_email', {
+        p_identifier: rawIdentifier
+      })
+
+      if (resolveError) {
+        setLoading(false)
+        Alert.alert('Sign in failed', resolveError.message)
+        return
+      }
+
+      if (!resolvedEmail) {
+        setLoading(false)
+        Alert.alert('Sign in failed', 'Username not found')
+        return
+      }
+
+      loginEmail = String(resolvedEmail).toLowerCase()
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
+      email: loginEmail,
       password
     })
 
@@ -60,8 +89,10 @@ export default function AuthScreen({ onAuth }: { onAuth: () => void }) {
     }
 
     if (data.user) {
-      const profileUsername = (data.user.user_metadata?.username as string | undefined) ?? undefined
-      await ensureUserProfile(data.user.id, profileUsername)
+      const profileUsername = getSafeUsername(
+        (data.user.user_metadata?.username as string | undefined) ?? undefined
+      )
+      await ensureUserProfile(data.user.id, profileUsername, data.user.email)
     }
 
     setLoading(false)
@@ -69,8 +100,8 @@ export default function AuthScreen({ onAuth }: { onAuth: () => void }) {
   }
 
   const submit = () => {
-    if (!email || !password) {
-      Alert.alert('Enter email and password')
+    if (!identifier || !password) {
+      Alert.alert('Enter username/email and password')
       return
     }
     if (mode === 'signup' && !username.trim()) {
@@ -124,12 +155,12 @@ export default function AuthScreen({ onAuth }: { onAuth: () => void }) {
             ) : null}
             <TextInput
               autoCapitalize="none"
-              keyboardType="email-address"
-              onChangeText={setEmail}
-              placeholder="Email"
+              keyboardType={mode === 'signin' ? 'default' : 'email-address'}
+              onChangeText={setIdentifier}
+              placeholder={mode === 'signin' ? 'Email or Username' : 'Email'}
               placeholderTextColor="#8B93AB"
               style={styles.input}
-              value={email}
+              value={identifier}
             />
             <TextInput
               onChangeText={setPassword}

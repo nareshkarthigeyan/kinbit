@@ -1,10 +1,14 @@
 import { supabase } from '../lib/supabase'
 import { getOrCreateInviteForCircle } from './inviteService'
-import { ensureUserProfile } from './userService'
+import { ensureUserProfile, getSafeUsername } from './userService'
 
 export const createCircle = async (name: string, userId: string) => {
   const { data: userData } = await supabase.auth.getUser()
-  await ensureUserProfile(userId, userData.user?.email)
+  await ensureUserProfile(
+    userId,
+    getSafeUsername((userData.user?.user_metadata?.username as string | undefined) ?? undefined),
+    userData.user?.email
+  )
 
   const { data, error } = await supabase
     .from('circles')

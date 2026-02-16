@@ -64,6 +64,12 @@ const getSignedPhotoUrl = async (storagePath: string) => {
   return signed.signedUrl
 }
 
+const buildDisplayName = (username: string | null | undefined, senderId: string) => {
+  const trimmed = username?.trim()
+  if (trimmed) return trimmed
+  return `User-${senderId.slice(0, 6)}`
+}
+
 export const getFeedItems = async () => {
   const { data: authData, error: authError } = await supabase.auth.getUser()
   if (authError) throw authError
@@ -123,7 +129,8 @@ export const getFeedItems = async () => {
   const { data: userRows } = await supabase.from('users').select('id, username').in('id', senderIds)
   const usernameById = new Map<string, string>()
   for (const row of userRows ?? []) {
-    usernameById.set(row.id as string, (row.username as string) ?? 'Unknown')
+    const id = row.id as string
+    usernameById.set(id, buildDisplayName((row.username as string | null) ?? null, id))
   }
 
   const signedResults = await Promise.all(
@@ -137,7 +144,9 @@ export const getFeedItems = async () => {
         createdAt: value.photo.created_at,
         circleIds: Array.from(value.circleIds),
         senderId: value.photo.sender_id,
-        senderUsername: usernameById.get(value.photo.sender_id) ?? 'Unknown'
+        senderUsername:
+          usernameById.get(value.photo.sender_id) ??
+          buildDisplayName(null, value.photo.sender_id)
       } as FeedItem
     })
   )

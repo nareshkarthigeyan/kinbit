@@ -1,7 +1,7 @@
 import * as ImagePicker from 'expo-image-picker'
 import { supabase } from '../lib/supabase'
 import { Alert } from 'react-native'
-import { ensureUserProfile } from './userService'
+import { ensureUserProfile, getSafeUsername } from './userService'
 
 type UploadOptions = {
   postToAll?: boolean
@@ -15,7 +15,11 @@ export const uploadPhotoFromUri = async (uri: string, options: UploadOptions = {
     return false
   }
 
-  await ensureUserProfile(user.id, user.email)
+  await ensureUserProfile(
+    user.id,
+    getSafeUsername((user.user_metadata?.username as string | undefined) ?? undefined),
+    user.email
+  )
 
   const response = await fetch(uri)
   const arrayBuffer = await response.arrayBuffer()

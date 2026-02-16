@@ -61,7 +61,10 @@ kinbit/
     ├── 04_phase2_policies.sql
     ├── 05_feed_read_policies.sql
     ├── 06_invites.sql
-    └── 07_fix_photo_map_policy_recursion.sql
+    ├── 07_fix_photo_map_policy_recursion.sql
+    ├── 08_username_email_login.sql
+    ├── 09_profile_sync_and_username_backfill.sql
+    └── 10_users_read_profiles_policy.sql
 ```
 
 ## Prerequisites
@@ -103,6 +106,9 @@ In Supabase SQL Editor, run files in this exact order:
 5. `db/05_feed_read_policies.sql`
 6. `db/06_invites.sql`
 7. `db/07_fix_photo_map_policy_recursion.sql`
+8. `db/08_username_email_login.sql`
+9. `db/09_profile_sync_and_username_backfill.sql`
+10. `db/10_users_read_profiles_policy.sql`
 
 ### 4) Create storage bucket
 
@@ -155,6 +161,10 @@ Then launch:
   - Ensure photo is not expired (`expires_at`)
 - Invite RPC/function not found:
   - Ensure `db/06_invites.sql` has been applied
+- Username login not resolving:
+  - Ensure `db/08_username_email_login.sql` has been applied
+- Feed shows fallback names like `User-xxxxxx`:
+  - Ensure `db/09_profile_sync_and_username_backfill.sql` and `db/10_users_read_profiles_policy.sql` have been applied
 
 ## Security and Data Model
 

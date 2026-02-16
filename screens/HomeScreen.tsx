@@ -280,6 +280,15 @@ export default function HomeScreen() {
     void loadInviteCode(firstCircleId)
   }
 
+  const handleLogout = async () => {
+    await runWithCooldown(async () => {
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        Alert.alert('Logout failed', error.message)
+      }
+    })
+  }
+
   const isSendState = Boolean(capturedUri)
   const safeFeedIndex = feed.length > 0 ? Math.min(feedIndex, feed.length - 1) : 0
   const activeFeedItem = feed[safeFeedIndex]
@@ -364,6 +373,13 @@ export default function HomeScreen() {
                 disabled={actionBusy}
               >
                 <Ionicons name="camera-reverse-outline" size={22} color="#EAF2FF" />
+              </Pressable>
+              <Pressable
+                style={[styles.iconButton, actionBusy && styles.disabled]}
+                onPress={() => void handleLogout()}
+                disabled={actionBusy}
+              >
+                <Ionicons name="log-out-outline" size={20} color="#EAF2FF" />
               </Pressable>
             </View>
           </View>
